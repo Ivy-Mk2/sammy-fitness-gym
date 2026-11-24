@@ -344,6 +344,17 @@ class ApiRestTest {
                 .andExpect(jsonPath("$[0].nombre").value("Mensual"));
     }
 
+    @Test
+    void entrenadoresParaCualquierAutenticadoSinDatosSensibles() throws Exception {
+        mvc.perform(como(CLIENTE_01, get("/api/entrenadores")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[0].nombre").value("Andrea Flores León"))
+                .andExpect(jsonPath("$[0].correo").doesNotExist())
+                .andExpect(jsonPath("$[0].dni").doesNotExist());
+        mvc.perform(get("/api/entrenadores")).andExpect(status().isUnauthorized());
+    }
+
     // ------------------------------------------------------------------ Swagger
 
     @Test

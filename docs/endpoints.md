@@ -61,6 +61,9 @@ Base URL local: `http://localhost:8080` · Documentación interactiva: `http://l
 | POST | `/api/socios/{id}/membresias` | ADMINISTRADOR, RECEPCIONISTA | Path: `id` · Body: `{ planId*, fechaInicio (por defecto hoy) }` | **201** membresía con `fechaVencimiento = fechaInicio + duración del plan` (RN-05) · 400 · 401 · 403 · 404 socio o plan inexistente · 409 ya tiene una membresía activa en ese periodo | RF-11 |
 | PATCH | `/api/membresias/{id}/estado` | ADMINISTRADOR, RECEPCIONISTA | Path: `id` · Body: `{ estado* (ACTIVA, VENCIDA, CONGELADA) }` | **200** membresía · 400 · 401 · 403 · 404 · 409 no se puede activar (vencida o se cruza con otra activa) | RF-11 |
 | GET | `/api/planes` | Todos los autenticados | — | **200** `[ { id, nombre, duracionDias, precio } ]` · 401 | RF-12 |
+| GET | `/api/entrenadores` | Todos los autenticados | — | **200** `[ { id, nombre } ]` (solo entrenadores activos; sin datos personales) · 401 | RF-02, RF-03 |
+
+> `GET /api/entrenadores` se agregó en la Fase 7: el frontend lo necesita para el filtro por entrenador del catálogo y para el formulario de clases del administrador.
 
 `*` = obligatorio.
 

@@ -3,6 +3,7 @@ package com.sammyfitness.gym.service;
 import com.sammyfitness.gym.dto.ClaseFiltro;
 import com.sammyfitness.gym.dto.ClaseRequest;
 import com.sammyfitness.gym.dto.ClaseResponse;
+import com.sammyfitness.gym.dto.EntrenadorResponse;
 import com.sammyfitness.gym.dto.InscritoResponse;
 import com.sammyfitness.gym.exception.ConflictoNegocioException;
 import com.sammyfitness.gym.exception.DatosInvalidosException;
@@ -72,6 +73,15 @@ public class ClaseService {
         }
         return reservaRepository.findByClaseIdAndEstadoInOrderByFechaReservaAsc(claseId, ESTADOS_ACTIVOS).stream()
                 .map(mapper::inscrito)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EntrenadorResponse> listarEntrenadores() {
+        return usuarioRepository.findByRol(Rol.ENTRENADOR).stream()
+                .filter(Usuario::isActivo)
+                .map(u -> new EntrenadorResponse(u.getId(), u.getNombreCompleto()))
+                .sorted(Comparator.comparing(EntrenadorResponse::nombre))
                 .toList();
     }
 
