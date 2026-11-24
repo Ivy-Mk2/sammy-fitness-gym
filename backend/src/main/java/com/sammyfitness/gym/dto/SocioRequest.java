@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Alta y edición de socio (cliente).
- * password: obligatoria al crear (mín. 8); al editar es opcional (vacía = no se cambia).
+ * password: obligatoria al crear (8-100 caracteres); al editar es opcional (vacía o ausente = no se cambia).
  * activo: solo se usa al editar (null = no se cambia).
  */
 public record SocioRequest(
@@ -32,7 +32,8 @@ public record SocioRequest(
         @Pattern(regexp = "\\d{9}", message = "El teléfono debe tener exactamente 9 dígitos")
         String telefono,
 
-        @Size(max = 100, message = "La contraseña admite máximo 100 caracteres")
+        /* Vacía solo se acepta al editar (= no cambiar); al crear el servicio la exige. */
+        @Pattern(regexp = "^$|^.{8,100}$", message = "La contraseña debe tener entre 8 y 100 caracteres")
         String password,
 
         Boolean activo

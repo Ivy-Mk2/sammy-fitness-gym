@@ -45,7 +45,10 @@ class ReglasNegocioTest {
     @Autowired UsuarioRepository usuarioRepository;
     @MockitoBean NotificacionService notificaciones;
 
-    static final LocalDate MANANA = LocalDate.now().plusDays(1);
+    /** Se calcula en cada uso para que las pruebas no fallen si se ejecutan cruzando la medianoche. */
+    static LocalDate manana() {
+        return LocalDate.now().plusDays(1);
+    }
 
     // =====================================================================================
     @Nested
@@ -54,7 +57,7 @@ class ReglasNegocioTest {
         @Test
         void reservaValidaQuedaConfirmadaYOcupaUnCupo() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
-            Clase clase = datos.clase(entrenador, MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(entrenador, manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.clienteConMembresia();
 
             ReservaResponse r = reservaService.reservar(cliente.getId(), clase.getId());
@@ -66,7 +69,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn01_clienteSinMembresiaNoPuedeReservar() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.usuario(Rol.CLIENTE);
 
             assertThatThrownBy(() -> reservaService.reservar(cliente.getId(), clase.getId()))
@@ -76,7 +79,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn01_membresiaVencidaNoPermiteReservar() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.usuario(Rol.CLIENTE);
             datos.membresia(cliente, LocalDate.now().minusDays(40), EstadoMembresia.VENCIDA);
 
@@ -86,7 +89,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn01_membresiaCongeladaNoPermiteReservar() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.usuario(Rol.CLIENTE);
             datos.membresia(cliente, LocalDate.now(), EstadoMembresia.CONGELADA);
 
@@ -107,7 +110,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn02_claseLlenaRechazaLaReserva() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 1);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 1);
             reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
             Usuario otro = datos.clienteConMembresia();
 
@@ -118,7 +121,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn03_noSePuedeReservarDosVecesLaMismaClase() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.clienteConMembresia();
             reservaService.reservar(cliente.getId(), clase.getId());
 
@@ -129,8 +132,8 @@ class ReglasNegocioTest {
 
         @Test
         void rn03_noSePuedenReservarDosClasesQueSeCruzan() {
-            Clase c1 = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
-            Clase c2 = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:30", "11:30", 5);
+            Clase c1 = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
+            Clase c2 = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:30", "11:30", 5);
             Usuario cliente = datos.clienteConMembresia();
             reservaService.reservar(cliente.getId(), c1.getId());
 
@@ -141,8 +144,8 @@ class ReglasNegocioTest {
 
         @Test
         void rn03_clasesConsecutivasSiSePermiten() {
-            Clase c1 = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
-            Clase c2 = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "11:00", "12:00", 5);
+            Clase c1 = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
+            Clase c2 = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "11:00", "12:00", 5);
             Usuario cliente = datos.clienteConMembresia();
             reservaService.reservar(cliente.getId(), c1.getId());
 
@@ -152,7 +155,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn04_cancelarLiberaElCupo() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 1);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 1);
             Usuario cliente = datos.clienteConMembresia();
             ReservaResponse r = reservaService.reservar(cliente.getId(), clase.getId());
 
@@ -167,7 +170,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn04_trasCancelarElClientePuedeVolverAReservar() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario cliente = datos.clienteConMembresia();
             reservaService.cancelar(cliente.getId(), reservaService.reservar(cliente.getId(), clase.getId()).id());
 
@@ -188,7 +191,7 @@ class ReglasNegocioTest {
 
         @Test
         void rn04_soloSeCancelanLasReservasPropias() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             ReservaResponse r = reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
             Usuario intruso = datos.clienteConMembresia();
 
@@ -210,7 +213,7 @@ class ReglasNegocioTest {
         void asistenciaSoloDesdeElDiaDeLaClase() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
             Usuario cliente = datos.clienteConMembresia();
-            Reserva futura = datos.reserva(cliente, datos.clase(entrenador, MANANA, "10:00", "11:00", 5), EstadoReserva.CONFIRMADA);
+            Reserva futura = datos.reserva(cliente, datos.clase(entrenador, manana(), "10:00", "11:00", 5), EstadoReserva.CONFIRMADA);
             Reserva pasada = datos.reserva(cliente,
                     datos.clase(entrenador, LocalDate.now().minusDays(1), "10:00", "11:00", 5), EstadoReserva.CONFIRMADA);
 
@@ -246,7 +249,7 @@ class ReglasNegocioTest {
         void entrenadorCreaClaseParaSiMismo() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
 
-            ClaseResponse c = claseService.crear(principal(entrenador), req(MANANA, "06:00", "07:00", 20, null));
+            ClaseResponse c = claseService.crear(principal(entrenador), req(manana(), "06:00", "07:00", 20, null));
 
             assertThat(c.entrenadorId()).isEqualTo(entrenador.getId());
             assertThat(c.cuposDisponibles()).isEqualTo(20);
@@ -257,7 +260,7 @@ class ReglasNegocioTest {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
             Usuario otro = datos.usuario(Rol.ENTRENADOR);
 
-            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(MANANA, "06:00", "07:00", 20, otro.getId())))
+            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(manana(), "06:00", "07:00", 20, otro.getId())))
                     .isInstanceOf(AccessDeniedException.class);
         }
 
@@ -266,9 +269,9 @@ class ReglasNegocioTest {
             Usuario admin = datos.usuario(Rol.ADMINISTRADOR);
             Usuario cliente = datos.usuario(Rol.CLIENTE);
 
-            assertThatThrownBy(() -> claseService.crear(principal(admin), req(MANANA, "06:00", "07:00", 20, null)))
+            assertThatThrownBy(() -> claseService.crear(principal(admin), req(manana(), "06:00", "07:00", 20, null)))
                     .isInstanceOf(DatosInvalidosException.class);
-            assertThatThrownBy(() -> claseService.crear(principal(admin), req(MANANA, "06:00", "07:00", 20, cliente.getId())))
+            assertThatThrownBy(() -> claseService.crear(principal(admin), req(manana(), "06:00", "07:00", 20, cliente.getId())))
                     .isInstanceOf(DatosInvalidosException.class);
         }
 
@@ -285,25 +288,25 @@ class ReglasNegocioTest {
         void horaFinDebeSerPosteriorAHoraInicio() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
 
-            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(MANANA, "07:00", "07:00", 20, null)))
+            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(manana(), "07:00", "07:00", 20, null)))
                     .isInstanceOf(DatosInvalidosException.class);
         }
 
         @Test
         void entrenadorNoPuedeTenerDosClasesEnElMismoHorario() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
-            claseService.crear(principal(entrenador), req(MANANA, "06:00", "07:00", 20, null));
+            claseService.crear(principal(entrenador), req(manana(), "06:00", "07:00", 20, null));
 
-            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(MANANA, "06:30", "07:30", 20, null)))
+            assertThatThrownBy(() -> claseService.crear(principal(entrenador), req(manana(), "06:30", "07:30", 20, null)))
                     .isInstanceOf(ConflictoNegocioException.class);
         }
 
         @Test
         void editarUnaClaseNoChocaConsigoMisma() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
-            ClaseResponse c = claseService.crear(principal(entrenador), req(MANANA, "06:00", "07:00", 20, null));
+            ClaseResponse c = claseService.crear(principal(entrenador), req(manana(), "06:00", "07:00", 20, null));
 
-            ClaseResponse editada = claseService.actualizar(principal(entrenador), c.id(), req(MANANA, "06:00", "07:30", 25, null));
+            ClaseResponse editada = claseService.actualizar(principal(entrenador), c.id(), req(manana(), "06:00", "07:30", 25, null));
 
             assertThat(editada.aforoMaximo()).isEqualTo(25);
             assertThat(editada.horaFin()).isEqualTo(LocalTime.of(7, 30));
@@ -312,30 +315,30 @@ class ReglasNegocioTest {
         @Test
         void noSePuedeReducirElAforoPorDebajoDeLasReservas() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
-            Clase clase = datos.clase(entrenador, MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(entrenador, manana(), "10:00", "11:00", 5);
             reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
             reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
 
             assertThatThrownBy(() -> claseService.actualizar(principal(entrenador), clase.getId(),
-                    req(MANANA, "10:00", "11:00", 1, null)))
+                    req(manana(), "10:00", "11:00", 1, null)))
                     .isInstanceOf(ConflictoNegocioException.class)
                     .hasMessageContaining("aforo");
         }
 
         @Test
         void entrenadorNoEditaClasesAjenas() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario otro = datos.usuario(Rol.ENTRENADOR);
 
             assertThatThrownBy(() -> claseService.actualizar(principal(otro), clase.getId(),
-                    req(MANANA, "10:00", "11:00", 5, null)))
+                    req(manana(), "10:00", "11:00", 5, null)))
                     .isInstanceOf(AccessDeniedException.class);
         }
 
         @Test
         void noSeEliminaUnaClaseConReservasConfirmadas() {
             Usuario entrenador = datos.usuario(Rol.ENTRENADOR);
-            Clase clase = datos.clase(entrenador, MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(entrenador, manana(), "10:00", "11:00", 5);
             reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
 
             assertThatThrownBy(() -> claseService.eliminar(principal(entrenador), clase.getId()))
@@ -353,7 +356,7 @@ class ReglasNegocioTest {
 
         @Test
         void inscritosDeClaseAjenaNoVisiblesParaEntrenador() {
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
             Usuario otro = datos.usuario(Rol.ENTRENADOR);
             Usuario recepcion = datos.usuario(Rol.RECEPCIONISTA);
             reservaService.reservar(datos.clienteConMembresia().getId(), clase.getId());
@@ -442,7 +445,7 @@ class ReglasNegocioTest {
         void congelarMembresiaImpideReservar() {
             Usuario cliente = datos.usuario(Rol.CLIENTE);
             Membresia m = datos.membresia(cliente, LocalDate.now(), EstadoMembresia.ACTIVA);
-            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), MANANA, "10:00", "11:00", 5);
+            Clase clase = datos.clase(datos.usuario(Rol.ENTRENADOR), manana(), "10:00", "11:00", 5);
 
             membresiaService.cambiarEstado(m.getId(), EstadoMembresia.CONGELADA);
 

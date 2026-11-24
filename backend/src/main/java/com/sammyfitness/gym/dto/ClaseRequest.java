@@ -1,6 +1,10 @@
 package com.sammyfitness.gym.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sammyfitness.gym.model.Disciplina;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,6 +29,7 @@ public record ClaseRequest(
         Long entrenadorId,
 
         @NotNull(message = "La fecha es obligatoria")
+        @FutureOrPresent(message = "La fecha no puede ser pasada")
         LocalDate fecha,
 
         @NotNull(message = "La hora de inicio es obligatoria")
@@ -41,4 +46,12 @@ public record ClaseRequest(
         @Size(max = 200, message = "La descripción admite máximo 200 caracteres")
         String descripcion
 ) {
+
+    /** Validación cruzada: horaFin debe ser posterior a horaInicio (campo "horario" en el mensaje de error). */
+    @JsonIgnore
+    @Schema(hidden = true)
+    @AssertTrue(message = "La hora de fin debe ser posterior a la hora de inicio")
+    public boolean isHorario() {
+        return horaInicio == null || horaFin == null || horaFin.isAfter(horaInicio);
+    }
 }
