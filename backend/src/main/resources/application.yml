@@ -32,3 +32,14 @@ app:
     expiration-ms: ${JWT_EXPIRATION_MS:28800000}
   cors:
     allowed-origin: ${FRONTEND_URL:http://localhost:4200}
+  # Zona horaria del gimnasio: define qué es "hoy" y si una clase ya pasó
+  zona-horaria: ${APP_ZONA_HORARIA:America/Lima}
+  membresias:
+    # RN-06: todos los días a las 06:00 (segundo minuto hora día mes día-semana)
+    cron: ${MEMBRESIAS_CRON:0 0 6 * * *}
+    dias-aviso: 3
+  mail:
+    # Sin SENDGRID_API_KEY los correos solo se escriben en el log
+    sendgrid-api-key: ${SENDGRID_API_KEY:}
+    from: ${MAIL_FROM:no-reply@sammyfitness.test}
+    from-name: ${MAIL_FROM_NAME:Sammy Fitness Gym}
