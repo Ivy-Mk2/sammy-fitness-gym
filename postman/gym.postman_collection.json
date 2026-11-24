@@ -1,0 +1,454 @@
+{
+  "info": {
+    "name": "Sammy Fitness Gym – Casos de prueba",
+    "_postman_id": "6f1d6a52-6c1e-4d8a-9a43-5a0f3c2b9e10",
+    "description": "Casos de prueba PE-01 a PE-10 de la API.\n\nANTES DE EJECUTAR: en la pestaña *Variables* de la colección, ponga en `password` el valor de SEED_PASSWORD de su backend/.env (contraseña de los usuarios de prueba).\n\nEjecute la carpeta completa en orden con *Run collection*. La variable `{{token}}` se llena automáticamente en cada login. Las peticiones \"Aux\" preparan el escenario (login con otro rol y limpieza) y también verifican su resultado.\n\nEl flujo es repetible: PE-05 crea una clase nueva (aforo 1) en un horario aleatorio, PE-06/07/08 reservan sobre ella y al final se elimina.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "password", "value": "CAMBIA_POR_TU_SEED_PASSWORD" },
+    { "key": "token", "value": "" },
+    { "key": "entrenadorToken", "value": "" },
+    { "key": "claseId", "value": "" },
+    { "key": "reservaId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "PE-01 Login válido (cliente) → 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-01: status 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Devuelve token, rol y nombre', () => {",
+              "  pm.expect(body.token).to.be.a('string').and.not.empty;",
+              "  pm.expect(body.rol).to.eql('CLIENTE');",
+              "  pm.expect(body.nombre).to.be.a('string');",
+              "});",
+              "pm.collectionVariables.set('token', body.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente03@correo.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+        "description": "Login de un cliente con membresía activa. Guarda el JWT en {{token}}."
+      }
+    },
+    {
+      "name": "PE-02 Contraseña incorrecta → 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-02: status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Mensaje genérico, sin indicar qué dato falló', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.mensaje).to.eql('Credenciales incorrectas');",
+              "  pm.expect(body).to.have.all.keys('fecha', 'codigo', 'mensaje', 'ruta');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente03@correo.test\",\n  \"password\": \"contrasena-incorrecta\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-03 GET /api/clases sin token → 401",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-03: status 401', () => pm.response.to.have.status(401));",
+              "pm.test('Cuerpo uniforme de error', () => pm.expect(pm.response.json().codigo).to.eql(401));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/clases", "host": ["{{baseUrl}}"], "path": ["api", "clases"] },
+        "description": "Sin cabecera Authorization."
+      }
+    },
+    {
+      "name": "PE-04 POST /api/clases con token de cliente → 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-04: status 403', () => pm.response.to.have.status(403));",
+              "pm.test('Cuerpo uniforme de error', () => pm.expect(pm.response.json().codigo).to.eql(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Clase no autorizada\",\n  \"disciplina\": \"YOGA\",\n  \"fecha\": \"2030-01-10\",\n  \"horaInicio\": \"08:00\",\n  \"horaFin\": \"09:00\",\n  \"aforoMaximo\": 10\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/clases", "host": ["{{baseUrl}}"], "path": ["api", "clases"] }
+      }
+    },
+    {
+      "name": "Aux - Login entrenador",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login entrenador: 200 y rol ENTRENADOR', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().rol).to.eql('ENTRENADOR');",
+              "});",
+              "pm.collectionVariables.set('token', pm.response.json().token);",
+              "pm.collectionVariables.set('entrenadorToken', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"carlos.ramos@sammyfitness.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-05 POST /api/clases como entrenador → 201",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Clase dentro de 2 días, en una hora aleatoria (06:00–21:00) para no chocar con ejecuciones anteriores",
+              "const pad = n => String(n).padStart(2, '0');",
+              "const d = new Date();",
+              "d.setDate(d.getDate() + 2);",
+              "const h = 6 + Math.floor(Math.random() * 16);",
+              "const m = [0, 10, 20, 30][Math.floor(Math.random() * 4)];",
+              "pm.variables.set('fechaClase', `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);",
+              "pm.variables.set('horaInicio', `${pad(h)}:${pad(m)}`);",
+              "pm.variables.set('horaFin', `${pad(h)}:${pad(m + 25)}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-05: status 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('Devuelve la clase creada con cupos', () => {",
+              "  pm.expect(body.id).to.be.a('number');",
+              "  pm.expect(body.aforoMaximo).to.eql(1);",
+              "  pm.expect(body.cuposDisponibles).to.eql(1);",
+              "});",
+              "pm.test('Cabecera Location', () => pm.response.to.have.header('Location'));",
+              "pm.collectionVariables.set('claseId', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Funcional Express (Postman)\",\n  \"disciplina\": \"FUNCIONAL\",\n  \"fecha\": \"{{fechaClase}}\",\n  \"horaInicio\": \"{{horaInicio}}\",\n  \"horaFin\": \"{{horaFin}}\",\n  \"aforoMaximo\": 1,\n  \"descripcion\": \"Clase creada por la colección de pruebas\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/clases", "host": ["{{baseUrl}}"], "path": ["api", "clases"] },
+        "description": "El entrenador crea una clase para sí mismo (no envía entrenadorId). Aforo 1 para poder probar PE-07."
+      }
+    },
+    {
+      "name": "Aux - Login cliente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login cliente: 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente03@correo.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-06 Reserva válida → 201",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-06: status 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('Reserva CONFIRMADA', () => {",
+              "  pm.expect(body.estado).to.eql('CONFIRMADA');",
+              "  pm.expect(body.claseId).to.eql(Number(pm.collectionVariables.get('claseId')));",
+              "});",
+              "pm.collectionVariables.set('reservaId', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"claseId\": {{claseId}}\n}" },
+        "url": { "raw": "{{baseUrl}}/api/reservas", "host": ["{{baseUrl}}"], "path": ["api", "reservas"] },
+        "description": "cliente03 (membresía activa) reserva el único cupo de la clase creada en PE-05."
+      }
+    },
+    {
+      "name": "Aux - Login otro cliente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login cliente04: 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente04@correo.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-07 Clase llena → 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-07: status 409', () => pm.response.to.have.status(409));",
+              "pm.test('Mensaje de aforo completo', () => pm.expect(pm.response.json().mensaje).to.include('aforo completo'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"claseId\": {{claseId}}\n}" },
+        "url": { "raw": "{{baseUrl}}/api/reservas", "host": ["{{baseUrl}}"], "path": ["api", "reservas"] },
+        "description": "cliente04 intenta reservar la clase de aforo 1 que ya ocupó cliente03."
+      }
+    },
+    {
+      "name": "Aux - Login cliente con membresía vencida",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login cliente10: 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente10@correo.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-08 Membresía vencida → 409",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-08: status 409', () => pm.response.to.have.status(409));",
+              "pm.test('Mensaje de membresía no activa', () => pm.expect(pm.response.json().mensaje).to.include('membresía activa'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"claseId\": {{claseId}}\n}" },
+        "url": { "raw": "{{baseUrl}}/api/reservas", "host": ["{{baseUrl}}"], "path": ["api", "reservas"] },
+        "description": "cliente10 tiene la membresía VENCIDA (RN-01 se valida antes que el aforo)."
+      }
+    },
+    {
+      "name": "Aux - Login cliente (dueño de la reserva)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login cliente03: 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"correo\": \"cliente03@correo.test\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      }
+    },
+    {
+      "name": "PE-09 DELETE reserva propia → 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-09: status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Reserva CANCELADA', () => pm.expect(pm.response.json().estado).to.eql('CANCELADA'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/reservas/{{reservaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "reservas", "{{reservaId}}"]
+        },
+        "description": "RN-04: cancela la reserva de PE-06 y libera el cupo."
+      }
+    },
+    {
+      "name": "PE-10 GET /api/clases/9999 → 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PE-10: status 404', () => pm.response.to.have.status(404));",
+              "pm.test('Cuerpo uniforme de error', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.codigo).to.eql(404);",
+              "  pm.expect(body.ruta).to.eql('/api/clases/9999');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/clases/9999", "host": ["{{baseUrl}}"], "path": ["api", "clases", "9999"] }
+      }
+    },
+    {
+      "name": "Aux - Limpieza: eliminar la clase de PE-05 → 204",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Clase de prueba eliminada (204)', () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{entrenadorToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/clases/{{claseId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "clases", "{{claseId}}"]
+        },
+        "description": "Deja la base de datos como estaba (la única reserva quedó CANCELADA en PE-09)."
+      }
+    }
+  ]
+}
