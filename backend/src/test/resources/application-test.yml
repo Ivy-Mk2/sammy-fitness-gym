@@ -11,3 +11,9 @@ spring:
 app:
   seed:
     password: Test12345
+  jwt:
+    # Valor solo para pruebas automatizadas (no se usa en ningún entorno real)
+    secret: clave-de-pruebas-unitarias-no-usar-en-produccion-0123456789
+    expiration-ms: 3600000
+  cors:
+    allowed-origin: http://localhost:4200

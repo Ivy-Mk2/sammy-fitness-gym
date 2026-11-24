@@ -25,3 +25,10 @@ server:
 app:
   seed:
     password: ${SEED_PASSWORD:}
+  jwt:
+    # Clave HMAC de al menos 32 caracteres. Obligatoria: la app no arranca sin ella.
+    secret: ${JWT_SECRET}
+    # Duración del token en milisegundos (por defecto 8 horas)
+    expiration-ms: ${JWT_EXPIRATION_MS:28800000}
+  cors:
+    allowed-origin: ${FRONTEND_URL:http://localhost:4200}
