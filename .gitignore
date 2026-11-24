@@ -1,28 +1,39 @@
-# ---------- Variables de entorno ----------
+# ---------- Variables de entorno y secretos ----------
 .env
+.env.*
 *.env
 !.env.example
 
-# ---------- Java / Maven ----------
-backend/target/
+# ---------- Java / Maven (backend) ----------
+target/
 *.class
-*.log
-hs_err_pid*
+*.jar
 !backend/.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+replay_pid*
 
-# ---------- Angular / Node ----------
-frontend/node_modules/
-frontend/dist/
-frontend/.angular/
-frontend/coverage/
+# ---------- Angular / Node (frontend) ----------
+node_modules/
+dist/
+.angular/
+coverage/
+out-tsc/
 npm-debug.log*
+yarn-error.log*
 
-# ---------- IDE / SO ----------
+# ---------- Logs ----------
+*.log
+logs/
+
+# ---------- IDE / Sistema operativo ----------
 .idea/
 *.iml
+*.iws
 .vscode/
 .classpath
 .project
 .settings/
+.factorypath
 .DS_Store
 Thumbs.db
+desktop.ini
