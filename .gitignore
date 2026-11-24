@@ -1,0 +1,28 @@
+# ---------- Variables de entorno ----------
+.env
+*.env
+!.env.example
+
+# ---------- Java / Maven ----------
+backend/target/
+*.class
+*.log
+hs_err_pid*
+!backend/.mvn/wrapper/maven-wrapper.jar
+
+# ---------- Angular / Node ----------
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+npm-debug.log*
+
+# ---------- IDE / SO ----------
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
