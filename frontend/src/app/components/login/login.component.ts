@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -17,6 +18,7 @@ import { mensajeError } from '../../core/utils';
   imports: [
     ReactiveFormsModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -76,6 +78,11 @@ import { mensajeError } from '../../core/utils';
             }
           </mat-form-field>
 
+          <div class="opciones">
+            <mat-checkbox formControlName="recordar">Recordarme</mat-checkbox>
+            <button type="button" class="enlace" (click)="olvidoPassword()">¿Olvidaste tu contraseña?</button>
+          </div>
+
           @if (error()) {
             <p class="error" role="alert"><mat-icon>error</mat-icon>{{ error() }}</p>
           }
@@ -88,6 +95,7 @@ import { mensajeError } from '../../core/utils';
             }
           </button>
         </form>
+        <p class="nuevo">¿Eres nuevo? Solicita tu registro en recepción.</p>
       </mat-card>
     </div>
   `,
@@ -111,6 +119,12 @@ import { mensajeError } from '../../core/utils';
     h1 { font: var(--mat-sys-headline-small); margin: 8px 0 4px; }
     .cabecera p { margin: 0; color: var(--mat-sys-on-surface-variant); }
     form { display: flex; flex-direction: column; gap: 4px; }
+    .opciones { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+    .enlace {
+      background: none; border: 0; padding: 4px; cursor: pointer;
+      color: var(--mat-sys-primary); font: var(--mat-sys-body-medium); text-decoration: underline;
+    }
+    .nuevo { margin: 16px 0 0; text-align: center; color: var(--mat-sys-on-surface-variant); font: var(--mat-sys-body-small); }
     .ingresar { height: 48px; margin-top: 8px; }
     .ingresar mat-spinner { margin: 0 auto; }
     .error {
@@ -135,12 +149,18 @@ export class LoginComponent implements OnInit {
   protected readonly form = this.fb.nonNullable.group({
     correo: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],
     password: ['', [Validators.required, Validators.maxLength(100)]],
+    recordar: [false],
   });
 
   ngOnInit(): void {
     if (this.auth.estaAutenticado()) {
       this.router.navigateByUrl(this.auth.rutaInicio());
     }
+  }
+
+  /** No hay recuperación por correo en esta versión: el personal de recepción restablece la clave. */
+  protected olvidoPassword(): void {
+    this.toast.info('Para restablecer tu contraseña, solicítalo en la recepción del gimnasio.');
   }
 
   protected ingresar(): void {
@@ -150,8 +170,8 @@ export class LoginComponent implements OnInit {
     }
     this.enviando.set(true);
     this.error.set(null);
-    const { correo, password } = this.form.getRawValue();
-    this.auth.login(correo.trim(), password).subscribe({
+    const { correo, password, recordar } = this.form.getRawValue();
+    this.auth.login(correo.trim(), password, recordar).subscribe({
       next: (usuario) => {
         this.enviando.set(false);
         this.toast.exito(`¡Bienvenido(a), ${usuario.nombre}!`);

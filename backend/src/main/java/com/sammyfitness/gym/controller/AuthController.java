@@ -1,8 +1,10 @@
 package com.sammyfitness.gym.controller;
 
+import com.sammyfitness.gym.dto.CambiarPasswordRequest;
 import com.sammyfitness.gym.dto.LoginRequest;
 import com.sammyfitness.gym.dto.LoginResponse;
 import com.sammyfitness.gym.exception.ErrorResponse;
+import com.sammyfitness.gym.security.UsuarioPrincipal;
 import com.sammyfitness.gym.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,10 +14,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @Tag(name = "1. Autenticación", description = "Inicio de sesión y obtención del token JWT")
 @RestController
@@ -37,5 +43,14 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @Operation(summary = "Cambiar contraseña del usuario autenticado")
+    @PostMapping("/cambiar-password")
+    public ResponseEntity<Map<String, String>> cambiarPassword(
+            @AuthenticationPrincipal UsuarioPrincipal principal,
+            @Valid @RequestBody CambiarPasswordRequest request) {
+        authService.cambiarPassword(principal.id(), request);
+        return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
     }
 }

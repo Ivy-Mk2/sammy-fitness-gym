@@ -10,7 +10,8 @@ export const CLAVE_TOKEN = 'token';
 
 /**
  * Sesión del usuario. El estado se publica en un BehaviorSubject (usuario$) y se reconstruye
- * a partir del JWT: en localStorage solo se guarda el token (nunca datos del usuario).
+ * a partir del JWT: solo se guarda el token (nunca datos del usuario). Con "Recordarme" va a localStorage
+ * (persiste al cerrar el navegador); sin él, a sessionStorage (dura lo que la pestaña).
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -47,7 +48,7 @@ export class AuthService {
     return !!u && roles.includes(u.rol);
   }
 
-  login(correo: string, password: string): Observable<UsuarioSesion> {
+  login(correo: string, password: string, recordar = true): Observable<UsuarioSesion> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, { correo, password }).pipe(
       map((resp) => {
         const sesion = decodificarToken(resp.token);
@@ -57,11 +58,18 @@ export class AuthService {
         return { token: resp.token, sesion };
       }),
       tap(({ token, sesion }) => {
-        guardarToken(token);
+        guardarToken(token, recordar);
         this.usuarioSubject.next(sesion);
       }),
       map(({ sesion }) => sesion),
     );
+  }
+
+  cambiarPassword(passwordActual: string, passwordNueva: string): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${environment.apiUrl}/auth/cambiar-password`, {
+      passwordActual,
+      passwordNueva,
+    });
   }
 
   /** Cierra la sesión y vuelve al login. */
@@ -84,11 +92,7 @@ export class AuthService {
   }
 
   private cerrarSesionLocal(): void {
-    try {
-      localStorage.removeItem(CLAVE_TOKEN);
-    } catch {
-      /* almacenamiento no disponible */
-    }
+    borrarToken();
     if (this.usuarioSubject.value !== null) {
       this.usuarioSubject.next(null);
     }
@@ -98,11 +102,7 @@ export class AuthService {
     const token = leerToken();
     const sesion = token ? decodificarToken(token) : null;
     if (token && !sesion) {
-      try {
-        localStorage.removeItem(CLAVE_TOKEN);
-      } catch {
-        /* ignorar */
-      }
+      borrarToken();
     }
     return sesion;
   }
@@ -110,17 +110,28 @@ export class AuthService {
 
 function leerToken(): string | null {
   try {
-    return localStorage.getItem(CLAVE_TOKEN);
+    return sessionStorage.getItem(CLAVE_TOKEN) ?? localStorage.getItem(CLAVE_TOKEN);
   } catch {
     return null;
   }
 }
 
-function guardarToken(token: string): void {
+/** Con "Recordarme" el token va a localStorage; sin él, a sessionStorage (se pierde al cerrar la pestaña). */
+function guardarToken(token: string, recordar: boolean): void {
   try {
-    localStorage.setItem(CLAVE_TOKEN, token);
+    borrarToken();
+    (recordar ? localStorage : sessionStorage).setItem(CLAVE_TOKEN, token);
   } catch {
     /* almacenamiento no disponible: la sesión dura lo que la pestaña */
+  }
+}
+
+function borrarToken(): void {
+  try {
+    localStorage.removeItem(CLAVE_TOKEN);
+    sessionStorage.removeItem(CLAVE_TOKEN);
+  } catch {
+    /* almacenamiento no disponible */
   }
 }
 

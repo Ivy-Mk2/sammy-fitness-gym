@@ -137,7 +137,7 @@ Abra <http://localhost:4200>. Otros comandos:
 
 ```bash
 npm run build                 # compilación de producción en frontend/dist
-npm test -- --watch=false     # pruebas unitarias (Vitest)
+npm test -- --watch=false     # pruebas unitarias (Vitest): 30 pruebas
 ```
 
 ---
@@ -168,7 +168,7 @@ Las fechas son relativas al día en que se cargó la base; para regenerarlas use
 
 | Rol | Puede |
 |---|---|
-| Cliente | Ver el catálogo con filtros y cupos, reservar en un clic, ver y cancelar sus reservas, ver su membresía |
+| Cliente | Ver el catálogo con filtros y cupos, reservar en un clic, ver y cancelar sus reservas, ver su membresía (también en la barra superior) |
 | Entrenador | Crear/editar/eliminar **sus** clases, ver sus inscritos y registrar asistencia |
 | Recepcionista | Registrar y editar socios, asignar membresías, cambiar su estado, ver inscritos |
 | Administrador | Todo lo anterior sobre cualquier clase |
@@ -179,6 +179,12 @@ el cupo (no en clases ya realizadas) · RN-05 vencimiento = inicio + duración d
 vencimientos y avisos por correo.
 
 Detalle de cada endpoint, roles y códigos de respuesta: **[docs/endpoints.md](docs/endpoints.md)**.
+
+---
+
+**Inicio de sesión:** la casilla **Recordarme** guarda el token en `localStorage` (la sesión sigue abierta al cerrar el navegador);
+sin marcarla, el token va a `sessionStorage` y la sesión dura lo que la pestaña. El enlace *¿Olvidaste tu contraseña?* indica
+que el restablecimiento lo hace la recepción del gimnasio (no hay recuperación por correo en esta versión).
 
 ---
 

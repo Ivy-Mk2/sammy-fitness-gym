@@ -19,7 +19,10 @@ describe('AuthService', () => {
     return TestBed.inject(AuthService);
   }
 
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
   afterEach(() => http?.verify());
 
   it('decodifica el payload del JWT, incluidos nombres con tildes', () => {
@@ -47,6 +50,22 @@ describe('AuthService', () => {
     expect(await firstValueFrom(auth.usuario$)).toMatchObject({ nombre: 'Ana Pérez' });
     expect(localStorage.getItem(CLAVE_TOKEN)).toBe(token);
     expect(Object.keys(localStorage)).toEqual([CLAVE_TOKEN]);
+  });
+
+  it('login sin "Recordarme" guarda el token solo en sessionStorage', async () => {
+    const auth = crearServicio();
+    const token = crearToken({ rol: 'CLIENTE' });
+
+    const resultado = firstValueFrom(auth.login('ana@correo.test', 'secreta', false));
+    http.expectOne(`${environment.apiUrl}/auth/login`).flush({ token, rol: 'CLIENTE', nombre: 'Ana Pérez' });
+    await resultado;
+
+    expect(sessionStorage.getItem(CLAVE_TOKEN)).toBe(token);
+    expect(localStorage.getItem(CLAVE_TOKEN)).toBeNull();
+    expect(auth.estaAutenticado()).toBe(true);
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    auth.logout();
+    expect(sessionStorage.getItem(CLAVE_TOKEN)).toBeNull();
   });
 
   it('restaura la sesión desde un token guardado válido', () => {
